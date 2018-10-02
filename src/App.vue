@@ -1,0 +1,69 @@
+<template>
+  <div id="app">
+    <Message :msg="ctrString"/>
+    <button @click="countup">click</button>
+    <button @click="reset">reset</button>
+    <img id="logo_img" alt="Vue logo" src="./assets/logo.png">
+    <VuePriEditor msg="Welcome to Your Vue.js App da" :img="base64"/>
+  </div>
+</template>
+
+<script>
+import VuePriEditor from './components/VuePriEditor.vue'
+import Message from './components/Message.vue'
+
+export default {
+  name: 'app',
+  components: {
+    VuePriEditor,
+    Message
+  },
+  data: function() {
+    return {
+      ctr: 0,
+      ctrString: "",
+      base64: ""
+    }
+  },
+  methods: {
+    countup: function() {
+      console.log(this.ctr)
+      this.ctr += 1
+      this.ctrString = this.ctr.toString()
+
+      let logo_img = document.getElementById('logo_img')
+      // reset data and set data
+      this.base64 = ""
+      this.$nextTick() // forcely update DOM
+        .then(function () {
+          this.base64 = this.imageToBase64(logo_img, 'image/png')
+        }.bind(this))
+    },
+    reset: function() {
+      this.base64 = ''
+    },
+    imageToBase64: function (img, mime_type) {
+        // New Canvas
+        var canvas = document.createElement('canvas');
+        canvas.width  = img.width;
+        canvas.height = img.height;
+        // Draw Image
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        // To Base64
+        return canvas.toDataURL(mime_type);
+    }
+  }
+}
+</script>
+
+<style>
+#app {
+  font-family: 'Avenir', Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: center;
+  color: #2c3e50;
+  margin-top: 60px;
+}
+</style>
