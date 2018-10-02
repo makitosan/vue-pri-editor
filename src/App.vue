@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <Message :msg="ctrString"/>
-    <img id="logo_img" alt="Vue logo" src="./assets/logo.png">
+    <img id="logo_img" alt="Vue logo" src="./assets/yuukiIMGL2254_TP_V.jpg">
     <div>
       <button @click="countup">click</button>
       <button @click="reset">reset</button>

@@ -4,14 +4,20 @@
     <div class="VuePriEditor_Preview">
       <img id="preview" class="VuePriEditor_Preview_Image" :src="imgBase64" @click="stamp"/>
       <div class="VuePriEditor_Preview_Controllers">
-        <button @click="grayscale">GRAY</button>
+        <button @click="greyscale">GRAY</button>
+        <button @click="sepia">SEPIA</button>
+        <button @click="posterize">POSTERIZE</button>
+        <button @click="blur">BLUR</button>
+        <button @click="undo">UNDO </button>
+        <button @click="showHistory" v-if="debugMode">HISTORY</button>
       </div>
       <div class="VuePriEditor_Preview_Stamps">
-        <img v-for="item in stamps" :src="item.src" alt="item.name" @click="selectStamp(item)"/>
+        <img v-for="item in stamps" :src="item.src" v-bind:class="{ selected: selectedStamp == item.name }" alt="item.name" @click="selectStamp(item)"/>
       </div>
-      <div>
-        <p>{{selectedStamp}}</p>
+      <div v-if="debugMode">
+        <p >{{selectedStamp}}</p>
       </div>
+      <div id="historyArea" v-if="debugMode"></div>
     </div>
   </div>
 </template>
@@ -24,20 +30,34 @@ export default {
   props: {
     msg: String,
     img: String,
-    stamps: Array
+    stamps: Array,
+    debugMode: {type: Boolean, default: false}
   },
   data: function() {
     return {
       imgBase64: "",
+      jimpImage: null,
       debug: "",
       selectedStamp: "",
-      namedStamps: {}
+      namedStamps: {},
+      history: []
     }
   },
   watch: {
     img: function(newVal, oldVal) { // watch it
-      console.log('img changed')
       this.imgBase64 = newVal
+      if(newVal != "" && newVal != null) {
+        let url = this.imgBase64.replace(/^data:image\/\w+;base64,/, "");
+        let buffer = new Buffer(url, 'base64');
+        // https://github.com/oliver-moran/jimp/issues/231
+        Jimp.read(buffer.buffer).then(function (tmpImage) {
+          this.jimpImage = tmpImage
+          // initialize history
+          this.history.length = 0
+        }.bind(this)).catch(function (err) {
+          console.error(err)
+        });
+      }
     }
   },
   created: function() {
@@ -53,53 +73,75 @@ export default {
     }.bind(this))
   },
   methods: {
-    grayscale: function() {
-      console.log('grayscale effect start')
-      let url = this.imgBase64.replace(/^data:image\/\w+;base64,/, "");
-      let buffer = new Buffer(url, 'base64');
-      // https://github.com/oliver-moran/jimp/issues/231
-      Jimp.read(buffer.buffer).then(function (tmpImage) {
-        tmpImage.greyscale().getBase64(Jimp.MIME_PNG, function (err, src) {
-          this.imgBase64 = src
-        }.bind(this));
-      }.bind(this)).catch(function (err) {
-        console.error(err)
-      });
+    greyscale: function() {
+      this.history.push(this.jimpImage.clone())
+      this.jimpImage.greyscale().getBase64(Jimp.MIME_PNG, function (err, src) {
+        this.imgBase64 = src
+      }.bind(this));
+    },
+    sepia: function() {
+      this.history.push(this.jimpImage.clone())
+      this.jimpImage.sepia().getBase64(Jimp.MIME_PNG, function (err, src) {
+        this.imgBase64 = src
+      }.bind(this));
+    },
+    posterize: function() {
+      this.history.push(this.jimpImage.clone())
+      this.jimpImage.posterize(3).getBase64(Jimp.MIME_PNG, function (err, src) {
+        this.imgBase64 = src
+      }.bind(this));
+    },
+    blur: function() {
+      this.history.push(this.jimpImage.clone())
+      this.jimpImage.blur(3).getBase64(Jimp.MIME_PNG, function (err, src) {
+        this.imgBase64 = src
+      }.bind(this));
     },
     selectStamp: function(item) {
       this.selectedStamp = item.name
     },
     stamp: function(e) {
-      let url = this.imgBase64.replace(/^data:image\/\w+;base64,/, "");
-      let buffer = new Buffer(url, 'base64');
-      // https://github.com/oliver-moran/jimp/issues/231
-      Jimp.read(buffer.buffer).then(function (tmpImage) {
-        tmpImage.composite(this.namedStamps[this.selectedStamp], e.offsetX - this.namedStamps[this.selectedStamp].bitmap.width / 2, e.offsetY - this.namedStamps[this.selectedStamp].bitmap.height / 2)
-          .getBase64(Jimp.MIME_PNG, function (err, src) {
+      this.history.push(this.jimpImage.clone())
+      this.jimpImage.composite(this.namedStamps[this.selectedStamp], e.offsetX - this.namedStamps[this.selectedStamp].bitmap.width / 2, e.offsetY - this.namedStamps[this.selectedStamp].bitmap.height / 2)
+        .getBase64(Jimp.MIME_PNG, function (err, src) {
+        this.imgBase64 = src
+      }.bind(this));
+    },
+    undo: function() {
+      if(this.history.length > 0) {
+        this.jimpImage = this.history.pop()
+        this.jimpImage.getBase64(Jimp.MIME_PNG, function (err, src) {
           this.imgBase64 = src
-        }.bind(this));
-      }.bind(this)).catch(function (err) {
-        console.error(err)
-      });
+        }.bind(this))
+      }
+    },
+    showHistory: function() {
+      this.history.forEach(function(item){
+        item.getBase64(Jimp.MIME_PNG, function (err, src) {
+          let img = document.createElement('img')
+          img.src = src
+          let historyArea = document.getElementById('historyArea')
+          historyArea.appendChild(img)
+        })
+      })
     }
   }
 }
 </script>
+<style lang="scss">
+$stamp_border_width: 5px;
 
-<!-- Add "scoped" attribute to limit CSS to this component only -->
-<style scoped>
-h3 {
-  margin: 40px 0 0;
-}
-ul {
-  list-style-type: none;
-  padding: 0;
-}
-li {
-  display: inline-block;
-  margin: 0 10px;
-}
-a {
-  color: #42b983;
+.VuePriEditor {
+  background-color: #EEEEEE;
+  &_Preview {
+    &_Stamps {
+      img {
+        border: solid $stamp_border_width transparent;
+      }
+      img.selected {
+        border: solid $stamp_border_width #cccccc;
+      }
+    }
+  }
 }
 </style>
