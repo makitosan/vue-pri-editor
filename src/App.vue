@@ -1,10 +1,12 @@
 <template>
   <div id="app">
     <Message :msg="ctrString"/>
-    <button @click="countup">click</button>
-    <button @click="reset">reset</button>
     <img id="logo_img" alt="Vue logo" src="./assets/logo.png">
-    <VuePriEditor msg="Welcome to Your Vue.js App da" :img="base64"/>
+    <div>
+      <button @click="countup">click</button>
+      <button @click="reset">reset</button>
+    </div>
+    <VuePriEditor msg="Welcome to Your Vue.js App da" :img="base64" :stamps="stamps"/>
   </div>
 </template>
 
@@ -22,7 +24,12 @@ export default {
     return {
       ctr: 0,
       ctrString: "",
-      base64: ""
+      base64: "",
+      stamps: [
+        {name: 'smile', src: require('./assets/smile.png')},
+        {name: 'cry', src: require('./assets/cry.png')},
+        {name: 'thumbsup', src: require('./assets/thumbsup.png')}
+      ]
     }
   },
   methods: {
