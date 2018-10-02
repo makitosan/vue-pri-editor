@@ -10,7 +10,14 @@
         <button @click="blur">BLUR</button>
         <button @click="undo">UNDO </button>
         <button @click="showHistory" v-if="debugMode">HISTORY</button>
+        <div class="VuePriEditor_Preview_Controllers_Logo">
+          <button @click="logo('top', 'left')">TOP Left</button>
+          <button @click="logo('top', 'right')">TOP RIGHT</button>
+          <button @click="logo('bottom', 'left')">BOTTOM Left</button>
+          <button @click="logo('bottom', 'right')">BOTTOM RIGHT</button>
+        </div>
       </div>
+
       <div class="VuePriEditor_Preview_Stamps">
         <img v-for="item in stamps" :src="item.src" v-bind:class="{ selected: selectedStamp == item.name }" alt="item.name" @click="selectStamp(item)"/>
       </div>
@@ -30,6 +37,7 @@ export default {
   props: {
     msg: String,
     img: String,
+    logoImage: String,
     stamps: Array,
     debugMode: {type: Boolean, default: false}
   },
@@ -37,6 +45,7 @@ export default {
     return {
       imgBase64: "",
       jimpImage: null,
+      jimpLogo: null,
       debug: "",
       selectedStamp: "",
       namedStamps: {},
@@ -71,6 +80,17 @@ export default {
         console.error(err)
       });
     }.bind(this))
+
+    // Load logo image to jimp
+    console.log(this.logoImage)
+    let bufferLogo = new Buffer(this.logoImage.replace(/^data:image\/\w+;base64,/, ""), 'base64');
+    // https://github.com/oliver-moran/jimp/issues/231
+    Jimp.read(bufferLogo.buffer).then(function (tmpImage) {
+      this.jimpLogo = tmpImage
+    }.bind(this)).catch(function (err) {
+      console.error(err)
+    });
+
   },
   methods: {
     greyscale: function() {
@@ -97,12 +117,27 @@ export default {
         this.imgBase64 = src
       }.bind(this));
     },
+
     selectStamp: function(item) {
       this.selectedStamp = item.name
     },
     stamp: function(e) {
       this.history.push(this.jimpImage.clone())
       this.jimpImage.composite(this.namedStamps[this.selectedStamp], e.offsetX - this.namedStamps[this.selectedStamp].bitmap.width / 2, e.offsetY - this.namedStamps[this.selectedStamp].bitmap.height / 2)
+        .getBase64(Jimp.MIME_PNG, function (err, src) {
+        this.imgBase64 = src
+      }.bind(this));
+    },
+    logo: function(v, h) {
+      this.history.push(this.jimpImage.clone())
+      let logoWidth = this.jimpLogo.bitmap.width
+      let logoHeight = this.jimpLogo.bitmap.height
+      let x = 0
+      let y = 0
+      if('bottom' === v) y = this.jimpImage.bitmap.height - logoHeight
+      if('right' === h) x = this.jimpImage.bitmap.width - logoWidth
+
+      this.jimpImage.composite(this.jimpLogo, x, y)
         .getBase64(Jimp.MIME_PNG, function (err, src) {
         this.imgBase64 = src
       }.bind(this));

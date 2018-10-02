@@ -6,7 +6,10 @@
       <button @click="countup">click</button>
       <button @click="reset">reset</button>
     </div>
-    <VuePriEditor msg="Welcome to Your Vue.js App da" :img="base64" :stamps="stamps"/>
+    <VuePriEditor msg="Welcome to Your Vue.js App da"
+      :img="base64"
+      :stamps="stamps"
+      :logoImage="logo"/>
   </div>
 </template>
 
@@ -29,7 +32,8 @@ export default {
         {name: 'smile', src: require('./assets/smile.png')},
         {name: 'cry', src: require('./assets/cry.png')},
         {name: 'thumbsup', src: require('./assets/thumbsup.png')}
-      ]
+      ],
+      logo: require('./assets/smile.png')
     }
   },
   methods: {
