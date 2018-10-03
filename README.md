@@ -1,5 +1,14 @@
 # vue-pri-editor
 
+## TODO ITEMS
+
+- [ ] import emojis from https://github.com/googlei18n/noto-emoji
+- [ ] frames
+- [ ] color effects (optional)
+- [ ] pencil (optional)
+- [ ] tab based controllers/effects pallet
+- [ ] controllers design
+
 ## Project setup
 ```
 yarn install
