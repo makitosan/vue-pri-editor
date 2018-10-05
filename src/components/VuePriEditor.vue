@@ -26,7 +26,7 @@
         </ul>
         <div class="VuePriEditor_Preview_Effects_Panels">
           <section v-for="tab in effects" :id="tab.title" :key="tab.title" v-show="tab.isActive" class="VuePriEditor_Preview_Effects_Panel">
-            <img v-for="item in tab.items" :key="item.name" :src="item.src" v-bind:class="{ selected: selectedStamp == item.name }" :alt="item.name" @click="selectStamp(item)"/>
+            <img v-for="item in tab.items" :key="item.name" :src="item.src" v-bind:class="{ selected: selectedStamp === item.hash }" :alt="item.name" @click="selectStamp(tab, item)"/>
           </section>
         </div>
 
@@ -57,7 +57,7 @@ export default {
       jimpImage: null,
       jimpLogo: null,
       debug: "",
-      selectedStamp: "",
+      selectedStamp: "##",
       namedStamps: {},
       history: []
     }
@@ -80,21 +80,6 @@ export default {
     }
   },
   created: function() {
-    this.effects.forEach((effect) => {
-      if(effect.title === 'stamp') {
-        effect.items.forEach((item) => {
-          let url = item.src.replace(/^data:image\/\w+;base64,/, "");
-          let buffer = new Buffer(url, 'base64');
-          // https://github.com/oliver-moran/jimp/issues/231
-          Jimp.read(buffer.buffer).then(function (tmpImage) {
-            this.$set(this.namedStamps, item.name, tmpImage)
-          }.bind(this)).catch(function (err) {
-            console.error(err)
-          })
-        })
-      }
-    })
-
     // Load logo image to jimp
     console.log(this.logoImage)
     let bufferLogo = new Buffer(this.logoImage.replace(/^data:image\/\w+;base64,/, ""), 'base64');
@@ -137,8 +122,29 @@ export default {
       tab.isActive = true
     },
 
-    selectStamp: function(item) {
-      this.selectedStamp = item.name
+    selectStamp: function(tab, item) {
+      const key = tab.title.replace(/ /g, '_') + '__' + item.name.replace(/ /g, '_');
+      if(typeof this.namedStamps[key] === 'undefined') {
+        item.hash = key
+        // read and cache
+        if(item.src.startsWith('data:image')) { // base64 encoded data
+          const url = item.src.replace(/^data:image\/\w+;base64,/, "")
+          const buffer = new Buffer(url, 'base64')
+          // https://github.com/oliver-moran/jimp/issues/231
+          Jimp.read(buffer.buffer).then(function (tmpImage) {
+            this.$set(this.namedStamps, key, tmpImage)
+          }.bind(this)).catch(function (err) {
+            console.error(err)
+          })
+        } else { // path to image
+          Jimp.read(item.src).then(function (tmpImage) {
+            this.$set(this.namedStamps, key, tmpImage)
+          }.bind(this)).catch(function (err) {
+            console.error(err)
+          })
+        }
+      }
+      this.selectedStamp = key
     },
     stamp: function(e) {
       this.history.push(this.jimpImage.clone())
@@ -269,17 +275,19 @@ $stamp_border_width: 5px;
           box-shadow: 0 0 10px rgba(0, 0, 0, .05);
           padding: 1em 1em;
           text-align: left;
+          max-height: 500px;
+          overflow-y: scroll;
+        }
 
+        img {
+          border: solid $stamp_border_width transparent;
+          width: 64px;
+          height: 64px;
+        }
+        img.selected {
+          border: solid $stamp_border_width #cccccc;
         }
       }
-
-      img {
-        border: solid $stamp_border_width transparent;
-      }
-      img.selected {
-        border: solid $stamp_border_width #cccccc;
-      }
-
     }
   }
 }
