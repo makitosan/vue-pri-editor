@@ -18,8 +18,18 @@
         </div>
       </div>
 
-      <div class="VuePriEditor_Preview_Stamps">
-        <img v-for="item in stamps" :src="item.src" v-bind:class="{ selected: selectedStamp == item.name }" alt="item.name" @click="selectStamp(item)"/>
+      <div class="VuePriEditor_Preview_Effects">
+        <ul class="VuePriEditor_Preview_Effects_Tab">
+          <li v-for="tab in effects" :key="tab.title" @click="selectTab(tab)" v-bind:class="{ selected: tab.isActive }" class="VuePriEditor_Preview_Effects_Tab_Item">
+            <section class="VuePriEditor_Preview_Effects_Tab_Item_Title">{{tab.title}}</section>
+          </li>
+        </ul>
+        <div class="VuePriEditor_Preview_Effects_Panels">
+          <section v-for="tab in effects" :id="tab.title" :key="tab.title" v-show="tab.isActive" class="VuePriEditor_Preview_Effects_Panel">
+            <img v-for="item in tab.items" :key="item.name" :src="item.src" v-bind:class="{ selected: selectedStamp == item.name }" :alt="item.name" @click="selectStamp(item)"/>
+          </section>
+        </div>
+
       </div>
       <div v-if="debugMode">
         <p >{{selectedStamp}}</p>
@@ -38,7 +48,7 @@ export default {
     msg: String,
     img: String,
     logoImage: String,
-    stamps: Array,
+    effects: Array,
     debugMode: {type: Boolean, default: false}
   },
   data: function() {
@@ -70,16 +80,20 @@ export default {
     }
   },
   created: function() {
-    this.stamps.forEach(function(item) {
-      let url = item.src.replace(/^data:image\/\w+;base64,/, "");
-      let buffer = new Buffer(url, 'base64');
-      // https://github.com/oliver-moran/jimp/issues/231
-      Jimp.read(buffer.buffer).then(function (tmpImage) {
-        this.$set(this.namedStamps, item.name, tmpImage)
-      }.bind(this)).catch(function (err) {
-        console.error(err)
-      });
-    }.bind(this))
+    this.effects.forEach((effect) => {
+      if(effect.title === 'stamp') {
+        effect.items.forEach((item) => {
+          let url = item.src.replace(/^data:image\/\w+;base64,/, "");
+          let buffer = new Buffer(url, 'base64');
+          // https://github.com/oliver-moran/jimp/issues/231
+          Jimp.read(buffer.buffer).then(function (tmpImage) {
+            this.$set(this.namedStamps, item.name, tmpImage)
+          }.bind(this)).catch(function (err) {
+            console.error(err)
+          })
+        })
+      }
+    })
 
     // Load logo image to jimp
     console.log(this.logoImage)
@@ -116,6 +130,11 @@ export default {
       this.jimpImage.blur(3).getBase64(Jimp.MIME_PNG, function (err, src) {
         this.imgBase64 = src
       }.bind(this));
+    },
+
+    selectTab: function(tab) {
+      this.effects.forEach((tab) => {tab.isActive = false})
+      tab.isActive = true
     },
 
     selectStamp: function(item) {
@@ -166,17 +185,110 @@ export default {
 <style lang="scss">
 $stamp_border_width: 5px;
 
+*,
+*:after,
+*:before {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
 .VuePriEditor {
   background-color: #EEEEEE;
   &_Preview {
-    &_Stamps {
+    &_Effects {
+      &_Tab {
+        color: #999;
+        font-size: 14px;
+        font-weight: 600;
+        margin-right: 0;
+        list-style: none;
+
+        @media (min-width: 700px) {
+          border: 0;
+          align-items: stretch;
+          display: flex;
+          justify-content: flex-start;
+          margin-bottom: -1px;
+        }
+
+        :not(:last-child) {
+          border-bottom: dotted 1px #ddd;
+        }
+
+        :hover {
+          color: #666;
+        }
+
+        .selected {
+          color: #000;
+        }
+
+        ul {
+          border: solid 1px #ddd;
+          border-radius: 6px;
+          margin-bottom: 5px;
+        }
+
+        &_Item {
+          background-color: #fff;
+          border: solid 1px #ddd;
+          border-radius: 3px 3px 0 0;
+          margin-right: .5em;
+          transform: translateY(2px);
+          transition: transform .3s ease;
+
+          &_Title {
+            align-items: center;
+            color: inherit;
+            display: flex;
+            padding: .75em 1em;
+            text-decoration: none;
+          }
+        }
+
+        li.selected {
+          border-bottom: solid 1px #fff;
+          z-index: 2;
+          transform: translateY(0);
+        }
+
+      }
+
+      &_Panels {
+        background-color: #fff;
+        padding: 0;
+      }
+      &_Panel {
+        @media (min-width: 700px) {
+          border-top-left-radius: 0;
+          background-color: #fff;
+          border: solid 1px #ddd;
+          border-radius: 0 6px 6px 6px;
+          box-shadow: 0 0 10px rgba(0, 0, 0, .05);
+          padding: 1em 1em;
+          text-align: left;
+
+        }
+      }
+
       img {
         border: solid $stamp_border_width transparent;
       }
       img.selected {
         border: solid $stamp_border_width #cccccc;
       }
+
     }
   }
 }
+
+
+.tabs-component-tab.is-disabled * {
+  color: #cdcdcd;
+  cursor: not-allowed !important;
+}
+
+
 </style>

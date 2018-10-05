@@ -8,7 +8,7 @@
     </div>
     <VuePriEditor msg="Welcome to Your Vue.js App da"
       :img="base64"
-      :stamps="stamps"
+      :effects="effects"
       :logoImage="logo"/>
   </div>
 </template>
@@ -28,10 +28,15 @@ export default {
       ctr: 0,
       ctrString: "",
       base64: "",
-      stamps: [
-        {name: 'smile', src: require('./assets/smile.png')},
-        {name: 'cry', src: require('./assets/cry.png')},
-        {name: 'thumbsup', src: require('./assets/thumbsup.png')}
+      effects: [
+        {title: 'stamp', isActive: true, items:[
+          {name: 'smile', src: require('./assets/smile.png')},
+          {name: 'cry', src: require('./assets/cry.png')},
+          {name: 'thumbsup', src: require('./assets/thumbsup.png')}
+        ]},
+        {title: 'frame', isActive: false, items:[
+          {name: '', src: require('./assets/smile.png')}
+        ]}
       ],
       logo: require('./assets/smile.png')
     }
